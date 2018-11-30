@@ -12,7 +12,7 @@ npm install
 ```
 Press `F5` or `Debug -> Start Debugging` on menu bar in VS Code.
 
-OPen new YAML file in the new VS Code instance (Debug).
+Open new YAML file in the new VS Code instance (Debug).
 
 Press `Ctl+Shift+P` in the VS Code instance and type command "yaml visualizer" and press `Enter`, then you should 
 see the visualized YAML structure on the side panel.

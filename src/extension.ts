@@ -16,6 +16,8 @@ export function activate(context: ExtensionContext) {
   let currentPanel: WebviewPanel | undefined = undefined;
   let openEditor: TextEditor | undefined = undefined;
 
+  console.log('Congratulations, your extension "yaml visualizer" is now active!');
+
   const controller = new VisualController(currentPanel, openEditor);
 
   // registerTextEditorCommand only available when there is an active text editor open.

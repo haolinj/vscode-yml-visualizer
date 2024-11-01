@@ -1,22 +1,23 @@
 'use strict';
 
-import * as fp from 'lodash/fp';
 import { blockContent } from './block-content';
 
 export const listBlock = (props: { index: number, block: any }) => {
   const { index, block } = props;
+
+  const {["plugin:lineNumber"]: removedKey, ...blockWithoutPluginKey} = block;
 
   return `
     <div class='card' style='margin-bottom: 20px;'>
       <div class='card-body'>
         <div class='card-title'>
           <button 
-            class='btn btn-primary' 
+            class='btn btn-primary btn-block' 
             aria-expanded='true' 
             data-toggle='collapse' 
             aria-controls='collapse${index}'
             data-target='#collapse${index}'>
-            Block <b>${index + 1}</b> ${typeof block === 'object' ? `(${fp.keys(block).length})` : ''}
+            Block <b>${index + 1}</b> ${typeof block === 'object' ? `(${Object.keys(block).length})` : ''}
             <i class='fas'></i>
           </button>
           <button 
@@ -26,7 +27,7 @@ export const listBlock = (props: { index: number, block: any }) => {
           </button>
         </div>
         <div class='card-text collapse show' id='collapse${index}'>
-          ${blockContent({ key: index, block: fp.omit('plugin:lineNumber')(block) })}
+          ${blockContent({ key: index, block: blockWithoutPluginKey })}
         </div>
       </div>
     </div>

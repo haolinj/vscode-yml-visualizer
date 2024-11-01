@@ -1,6 +1,5 @@
 'use strict';
 
-import * as fp from 'lodash/fp';
 import { TextDocument } from 'vscode';
 
 const updaterProps = () => {
@@ -10,9 +9,9 @@ const updaterProps = () => {
   const isYmlFile = (document: TextDocument) =>
     document.languageId.toLowerCase() === 'yml' || document.languageId.toLowerCase() === 'yaml';
 
-  const keyWithoutLineNumber = (k: string) => fp.first(fp.split('@')(k));
+  const keyWithoutLineNumber = (k: string) => k.split("@")[0];
 
-  const keyLineNumber = (k: string) => fp.last(fp.split('@')(k));
+  const keyLineNumber = (k: string) => k.split("@")[k.split("@").length - 1];
 
   return {
     isYmlFile,

@@ -7,7 +7,7 @@ import {
   Disposable
 } from 'vscode';
 import * as yaml from 'js-yaml';
-import * as fp from 'lodash/fp';
+import { CLOUDFORMATION_SCHEMA } from 'js-yaml-cloudformation-schema';
 import updaterProps from './updater-props';
 import * as templates from './templates';
 
@@ -47,87 +47,99 @@ class VisualController {
         return;
       }
 
-      console.log('Start visualizing...');
+      console.info('Start visualizing...');
+
+      console.info("SELECTIONS", textEditor.selection.active.line);
+
+      const activeLine = textEditor.selection.active.line;
 
       const yamlContent = textEditor.document.getText();
 
-      const rootObject = yaml.safeLoad(yamlContent);
+      const rootObject = yaml.load(yamlContent, { schema: CLOUDFORMATION_SCHEMA }) as { [k: string]: unknown };
 
       let blocks = '';
 
-      const lines = fp.flow(
-        fp.split('\n'),
-        // @ts-ignore
-        fp.convert({ cap: false }).reduce((res: any, content: string, index: number) => ({
-          ...res,
-          [index]: content
-        }))({})
-      )(yamlContent) as ILines;
+      const lines: ILines = yamlContent.split("\n").reduce((res, content, index) => ({
+        ...res,
+        [index]: content
+      }), {});
 
       // Array has different structure and viewing templates.
       if (Array.isArray(rootObject)) {
-        console.log('Visualizing array...');
+        console.info('Visualizing array...');
 
         const list = rootObject;
 
-        const listWithLineNumber = fp.map((item: any) => {
-          const firstKey = fp.first(fp.keys(item)) || '';
+        const listWithLineNumber = list.map((item) => {
+          const firstKey = Object.keys(item)[0] ?? "";
           const keyValue = `${firstKey}: ${item[firstKey]}`;
-          const lineKeys = fp.keys(lines);
-          const line = fp.find((l: number) => fp.includes(keyValue)(lines[l]))(lineKeys) || 0;
-          return { ...item, ['plugin:lineNumber']: line };
-        })(list);
+          const lineKeys = Object.keys(lines);
+          const line = lineKeys.find((l) => lines[parseInt(l)].includes(keyValue)) ?? 0;
 
-        // @ts-ignore
-        blocks = fp.convert({ cap: false }).reduce((res: string, block: any, index: number) =>
-          res + templates.listBlock({ index, block }))('')(listWithLineNumber);
+          return {
+            ...item,
+            ['plugin:lineNumber']: line
+          };
+        });
+
+        blocks = listWithLineNumber.reduce((res: string, block: any, index: number) =>
+          res + templates.listBlock({ index, block }), "");
       }
       else {
-        console.log('Visualizing object...');
+        console.info('Visualizing object...');
 
         const jsonContent = rootObject;
 
-        const objectWithLineNumber = fp.flow(
-          fp.keys,
-          fp.reduce((res: any, key: string) => {
-            const lineKeys = fp.keys(lines);
-            const line = fp.find((l: number) => fp.first(fp.split(':')(lines[l])) === key)(lineKeys);
-            return {
-              ...res,
-              [`${key}@${line}`]: jsonContent[key]
-            };
-          })({})
-        )(jsonContent);
+        const objectWithLineNumber: {[key: string]: unknown} = Object.keys(jsonContent).reduce((res, key) => {
+          const lineKeys = Object.keys(lines);
 
-        // @ts-ignore
-        blocks = fp.convert({ cap: false }).reduce((res: string, block: any, key: string) =>
-          res + templates.objectBlock({ key, block }))('')(objectWithLineNumber);
+          const line = lineKeys.find((l) => lines[parseInt(l)].split(":")[0] === key);
+
+          return {
+            ...res,
+            [`${key}@${line}`]: jsonContent[key]
+          };
+        }, {});
+
+        const objectLineNumberKeys = Object.keys(objectWithLineNumber);
+
+        blocks = objectLineNumberKeys.reduce((res: string, key: string, index: number) =>
+          res + templates.objectBlock({ key, block: objectWithLineNumber[key], nextKey: objectLineNumberKeys[index + 1], activeLine, currentPanel }), "");
       }
 
-      const totalBlocks = fp.keys(rootObject).length;
+      const totalBlocks = Object.keys(rootObject).length;
 
       currentPanel.webview.html = templates.main(templates.content({ totalBlocks, blocks }));
 
-      console.log('Finished.');
+      console.info('Finished.');
     }
     catch (err) {
       console.error(err);
+
+      if (!currentPanel) {
+        window.showErrorMessage('No open preview panel');
+        return;
+      }
+
+      const error = err as Error;
+
+      currentPanel.webview.html = `<html><body style="background-color:white; color:black;"><h2>Invalid YAML</h2> <p>${error.message}</p></body></html>`;
     }
-  }
+  };
 
   private onEvent() {
     this.visualUpdater(this.currentPanel, this.openEditor);
   }
 
   public dispose() {
-    console.log('Disposing the visual controller subscriptions.');
+    console.info('Disposing the visual controller subscriptions.');
     if (this.disposable) {
       this.disposable.dispose();
     }
   }
 
   public restore() {
-    console.log('Restoring the visual controller subscriptions.');
+    console.info('Restoring the visual controller subscriptions.');
 
     if (this.disposable) {
       this.disposable.dispose();

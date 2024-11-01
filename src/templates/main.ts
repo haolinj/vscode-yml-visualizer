@@ -13,12 +13,49 @@ export const main = (content: string) => `
         <script src='https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js' integrity='sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy' crossorigin='anonymous'></script>
 
         <style>
-          [data-toggle='collapse'] .fas:before {
-            content: '\\f078';
+          .caret {
+            cursor: pointer;
+            -webkit-user-select: none; /* Safari 3.1+ */
+            -moz-user-select: none; /* Firefox 2+ */
+            -ms-user-select: none; /* IE 10+ */
+            user-select: none;
           }
-          
-          [data-toggle='collapse'].collapsed .fas:before {
-            content: '\\f054';
+
+          .caret::before {
+            content: "\\25B6";
+            color: black;
+            display: inline-block;
+            margin-right: 6px;
+            -ms-transform: rotate(90deg); /* IE 9 */
+            -webkit-transform: rotate(90deg); /* Safari */'
+            transform: rotate(90deg);  
+          }
+
+          .caret-up::before {
+            -ms-transform: rotate(0deg); /* IE 9 */
+            -webkit-transform: rotate(0deg); /* Safari */'
+            transform: rotate(0deg);  
+          }
+
+          .nested {
+            display: none;
+          }
+
+          .active {
+            display: block;
+          }
+
+          ul {
+            list-style-type: none;
+          }
+
+          .root {
+            margin: 0;
+            padding: 0;
+          }
+
+          .root.active {
+            background-color: rgba(189, 242, 255, 0.25);
           }
         </style>
           
@@ -29,6 +66,24 @@ export const main = (content: string) => `
     </body>
     <script>
       window.vscode = acquireVsCodeApi();
+      var toggler = document.getElementsByClassName("caret");
+      var i;
+
+      for (i = 0; i < toggler.length; i++) {
+        toggler[i].addEventListener("click", function() {
+          this.parentElement.querySelector(".nested").classList.toggle("active");
+          this.classList.toggle("caret-up");
+        });
+      }
+
+      window.addEventListener('message', event => {
+        const message = event.data;
+        if (message.command === 'scroll') {
+          const element = document.getElementById(message.elementId);
+
+          element.scrollIntoView();
+        }
+      });
     </script>
   </html>
 `;

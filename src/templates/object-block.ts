@@ -1,38 +1,38 @@
 'use strict';
 
-import * as fp from 'lodash/fp';
 import { blockContent } from './block-content';
 import updaterProps from '../updater-props';
+import { WebviewPanel } from 'vscode';
 
-export const objectBlock = (props: { key: string, block: any }) => {
-  const { block, key } = props;
+export const objectBlock = (props: { key: string, block: any, activeLine: number, nextKey: string | undefined, currentPanel: WebviewPanel}) => {
+  const { block, key, activeLine, nextKey, currentPanel } = props;
 
-  const { blockId, keyLineNumber, keyWithoutLineNumber } = updaterProps();
+  const { keyLineNumber, keyWithoutLineNumber } = updaterProps();
+
+  const nextBlockLineNumber = parseInt(nextKey === undefined ? "-1" : keyLineNumber(nextKey), 10);
+
+  const blockLineNumber = parseInt(keyLineNumber(key), 10);
 
   const cleanKey = keyWithoutLineNumber(key);
 
+  if (activeLine === blockLineNumber) {
+    currentPanel.webview.postMessage({ command: 'scroll', elementId: cleanKey });
+  }
+
   return `
-    <div class='card'>
-      <div class='card-body'>
-        <div class='card-title'>
-          <button 
-            class='btn btn-primary' 
-            aria-expanded='true' 
-            data-toggle='collapse' 
-            aria-controls='${blockId(key)}'
-            data-target='#${blockId(key)}'>
-            ${cleanKey} ${typeof block === 'object' ? `(${fp.keys(block).length})` : ''}
-            <i class='fas'></i>
-          </button>
-          <button class='btn btn-light' 
-            onclick='window.vscode.postMessage({command:"goto",position:"${keyLineNumber(props.key)}"})'>
-            view
-          </button>
-        </div>
-        <div class='card-body collapse show' id='${blockId(key)}'>
+    <ul id="${cleanKey}" class="root ${activeLine >= blockLineNumber && (activeLine < nextBlockLineNumber || nextBlockLineNumber === -1) ? "active" : ""}">
+      <li>
+        <span class="caret">
+          ${cleanKey} ${typeof block === 'object' ? `(${Object.keys(block).length})` : ''}
+        </span>
+        <button class='btn btn-link btn-sm' onclick='window.vscode.postMessage({command:"goto",position:"${keyLineNumber(key)}"})'>
+          Go to line
+        </button>
+
+        <ul class="nested active">
           ${blockContent({ key, block })}
-        </div>
-      </div>
-    </div>
+        </ul>
+      </li>
+    </ul>
   `;
 };
